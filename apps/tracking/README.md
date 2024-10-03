@@ -1,4 +1,4 @@
-package_tracker
+tracking
 =====
 
 An OTP application
