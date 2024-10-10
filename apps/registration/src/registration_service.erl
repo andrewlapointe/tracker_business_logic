@@ -38,6 +38,3 @@ terminate(_Reason, _State) ->
 
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
-Explanation:
-register_package/1: Receives the package data (a map) and sends it to the gen_server.
-handle_call/3: Handles the registration by storing the package data into Riak.
