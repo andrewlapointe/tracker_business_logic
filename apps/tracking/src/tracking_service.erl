@@ -1,3 +1,6 @@
+% Tracking Service (gen_server)
+% The gen_server will handle requests for package information by querying Riak.
+
 -module(tracking_service).
 -behaviour(gen_server).
 
@@ -18,10 +21,11 @@ init([]) ->
     {ok, #{}}.
 
 handle_call({get_status, PackageId}, _From, State) ->
-    %% Fetch package status from Riak
+    %% Fetch the package status from Riak using the package ID as the key
     case riak_kv:get(PackageId) of
-        {ok, Status} ->
-            {reply, {ok, Status}, State};
+        {ok, Data} ->
+            %% Assume Data is in a map format that we can convert to JSON
+            {reply, {ok, Data}, State};
         {error, not_found} ->
             {reply, {error, "Package not found"}, State};
         {error, Reason} ->
@@ -33,3 +37,4 @@ terminate(_Reason, _State) ->
 
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
+
