@@ -7,9 +7,6 @@
 %% API
 -export([init/2, handle/2]).
 
-%% Include a JSON parsing library
--include_lib("jsx/include/jsx.hrl").
-
 init(Req, Opts) ->
     {ok, Req, Opts}.
 
