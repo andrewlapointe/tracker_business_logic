@@ -1,4 +1,4 @@
--module(registration_service).
+-module(registration_service_app).
 -behaviour(gen_server).
 
 %% API
