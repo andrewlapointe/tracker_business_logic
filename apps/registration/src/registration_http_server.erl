@@ -2,7 +2,7 @@
 % To set up the Cowboy HTTP server to use this handler, create a simple module that starts Cowboy and listens for HTTPS connections:
 
 
--module(registrationhttp_server).
+-module(registration_http_server).
 -export([start_link/0]).
 
 start_link() ->
