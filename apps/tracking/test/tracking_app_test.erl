@@ -28,7 +28,7 @@ get_status_test_() ->
     end),
 
     % Return a list of assertions
-    [
+    Assertions = [
         % Happy path: Package found
         ?_assertEqual({ok, #{status => "In Transit"}}, tracking_service:get_status(123)),
 
@@ -39,4 +39,7 @@ get_status_test_() ->
         ?_assertEqual({error, timeout}, tracking_service:get_status(789))
     ],
 
-    teardown().
+    teardown(),
+
+    % Return the list of assertions
+    Assertions.
