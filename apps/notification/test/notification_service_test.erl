@@ -31,8 +31,14 @@ notify_test_fail() ->
     %% Assert that notify returned an error
     ?assert(Result == {error, "Invalid status"}).  % Replace with the expected error tuple
 
+send_notification_test() ->
+    notification_service:send_notification_via_https(<<"test">>, <<"status">>),
+    ok.
+
 %% Test for successful HTTPS notification sending
 send_notification_via_https_success_test() ->
+    application:ensure_all_started(notification),
+
     %% Mock or simulate the successful behavior of send_notification_via_https
     PackageId = <<"12345">>,
     Status = <<"delivered">>,
@@ -46,6 +52,7 @@ send_notification_via_https_success_test() ->
 
 %% Test for failed HTTPS notification sending
 send_notification_via_https_fail_test() ->
+    application:ensure_all_started(notification),
     %% Mock or simulate the failure behavior of send_notification_via_https
     PackageId = <<"54321">>,
     Status = <<"network_error">>,  %% Assuming this simulates a network error

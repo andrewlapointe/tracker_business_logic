@@ -7,6 +7,7 @@
 %% API
 -export([start_link/0, notify/2]).
 -export([init/1, handle_event/2, terminate/2]).
+-export([send_notification_via_https/2]).
 
 %% Client API
 start_link() ->
