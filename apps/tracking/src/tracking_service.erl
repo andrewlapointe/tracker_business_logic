@@ -20,17 +20,18 @@ get_status(PackageId) ->
 init([]) ->
     {ok, #{}}.
 
-handle_call({get_status, PackageId}, _From, State) ->
-    %% Fetch the package status from Riak using the package ID as the key
-    case riak_kv:get(PackageId) of
-        {ok, Data} ->
-            %% Assume Data is in a map format that we can convert to JSON
-            {reply, {ok, Data}, State};
-        {error, not_found} ->
-            {reply, {error, "Package not found"}, State};
-        {error, Reason} ->
-            {reply, {error, Reason}, State}
-    end.
+    handle_call({get_status, PackageId}, _From, State) ->
+        %% Fetch the package status from the data_interaction module
+        case data_interaction:get_package_status(PackageId) of
+            {ok, Data} ->
+                %% Return the correct 3-tuple format: {reply, Reply, State}
+                {reply, {ok, Data}, State};
+            {error, not_found} ->
+                {reply, {error, "Package not found"}, State};
+            {error, Reason} ->
+                {reply, {error, Reason}, State}
+        end.
+    
 
 terminate(_Reason, _State) ->
     ok.
