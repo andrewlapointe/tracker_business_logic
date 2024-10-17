@@ -54,8 +54,11 @@ handle_event(_EventType, _EventContent, State, Data) ->
     {keep_state_and_data, Data}.
 
 terminate(_Reason, _State, _Data) ->
-    io:format("State machine terminating~n"),
-    ok.
+    case catch io:format("State machine terminating~n") of
+        {'EXIT', _} -> ok;  % Ignore IO errors (e.g., device termination)
+        _ -> ok
+    end.
+
 
 code_change(_OldVsn, State, Data, _Extra) ->
     {ok, State, Data}.
