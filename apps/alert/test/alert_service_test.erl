@@ -15,7 +15,7 @@ alert_service_test_() ->
 
 %% Setup function to start the alert service
 setup() ->
-    case alert_service_app:start_link() of
+    case alert_app:start_link() of
         {ok, _Pid} -> ok;
         {error, {already_started, _Pid}} -> ok
     end.
@@ -34,7 +34,7 @@ raise_alert_test() ->
     AlertMessage = <<"Test Alert">>,
 
     %% Call the alert service directly and inject the mock log function
-    alert_service_app:log_alert_to_file("test_log.txt", AlertMessage, fun mock_log/2),
+    alert_app:log_alert_to_file("test_log.txt", AlertMessage, fun mock_log/2),
 
     %% Capture the expected output, flatten the list for comparison
     ExpectedOutput = lists:flatten("MOCK LOG: FileName = \"test_log.txt\", Message = \"Test Alert\"\n"),

@@ -1,7 +1,7 @@
 % Package Monitor Service Update
 % The Package Monitor Service can trigger notifications by calling the notify/2 function from the Notification Service. Here’s how this part looks:
 
--module(package_monitor_service_app).
+-module(package_monitor_app).
 -behaviour(gen_server).
 
 %% API
@@ -25,7 +25,7 @@ handle_cast({update_db_record, PackageId, Data}, State) ->
     case riak_kv:put(PackageId, Data) of
         ok ->
             %% Notify the Notification Service
-            notification_service:notify(PackageId, Data),
+            notification_app:notify(PackageId, Data),
             % io:format("Package ~p updated successfully with data: ~p.~n", [PackageId, Data]),
             {noreply, State};
         {error, Reason} ->

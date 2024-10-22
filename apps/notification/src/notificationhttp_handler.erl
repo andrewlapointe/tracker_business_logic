@@ -24,7 +24,7 @@
 %             %% Extract the "package_id" from the query string
 %             {ok, PackageId, Req2} = cowboy_req:qs_val(<<"package_id">>, Req),
 %             %% Call the Tracking Service to get the status
-%             case tracking_service:get_status(PackageId) of
+%             case tracking_app:get_status(PackageId) of
 %                 {ok, Data} ->
 %                     %% Convert the data map to JSON and respond with 200 OK
 %                     JsonResponse = jsx:encode(Data),

@@ -17,7 +17,7 @@ setup() ->
     end),
     
     %% Start the gen_server
-    {ok, _Pid} = tracking_service:start_link(),
+    {ok, _Pid} = tracking_app:start_link(),
     ok.
 
 %% Cleanup the mock and stop the gen_server
@@ -30,15 +30,15 @@ tracking_service_test() ->
     setup(),
     %% Test: Valid package status
     ?assertEqual({ok, #{status => "delivered"}},
-                 tracking_service:get_status("valid_package")),
+                 tracking_app:get_status("valid_package")),
 
     %% Test: Missing package
     ?assertEqual({error, "Package not found"},
-                 tracking_service:get_status("missing_package")),
+                 tracking_app:get_status("missing_package")),
 
     %% Test: Unknown error case
     ?assertEqual({error, "unknown error"},
-                 tracking_service:get_status("some_package")),
+                 tracking_app:get_status("some_package")),
 
     %% Call cleanup after tests
     cleanup().

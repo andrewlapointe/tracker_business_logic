@@ -1,4 +1,4 @@
--module(alert_service_app).
+-module(alert_app).
 -behaviour(gen_event).
 
 %% API
