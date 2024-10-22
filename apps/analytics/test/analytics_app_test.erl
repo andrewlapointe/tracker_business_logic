@@ -3,7 +3,7 @@
 
 %% Setup and Teardown for each test
 setup() ->
-    case analytics_service:start_link() of
+    case analytics_app:start_link() of
         {ok, Pid} -> Pid;
         {error, {already_started, Pid}} -> Pid
     end.
@@ -21,7 +21,7 @@ start_state_machine_test() ->
 %% Test 2: Happy path test for tracking a package
 track_package_happy_path_test() ->
     Pid = setup(),
-    ?_assertEqual(ok, analytics_service:track_package(1, {10, 0, 0})),
+    ?_assertEqual(ok, analytics_app:track_package(1, {10, 0, 0})),
     teardown(Pid),
     ok.
 

@@ -20,7 +20,7 @@ register_package_test_() ->
 %% Setup function to start the gen_server
 setup() ->
     %% Ensure the registration_app is started correctly
-    case registration_service_app:start_link() of
+    case registration_app:start_link() of
         {ok, _Pid} -> ok;
         {error, {already_started, _Pid}} -> ok
     end.
@@ -38,7 +38,7 @@ register_package_success_test() ->
     meck:expect(riak_kv, put, fun(_PackageId, _PackageData) -> ok end),
 
     %% Call the registration function
-    {ok, "Package registered"} = registration_service_app:register_package(PackageData),
+    {ok, "Package registered"} = registration_app:register_package(PackageData),
 
     %% Check that the function was called correctly
     ?assert(meck:called(riak_kv, put, [<<"PKG123">>, PackageData])),
@@ -56,7 +56,7 @@ register_package_failure_test() ->
     meck:expect(riak_kv, put, fun(_PackageId, _PackageData) -> {error, <<"Some error">>} end),
 
     %% Call the registration function
-    {error, <<"Some error">>} = registration_service_app:register_package(PackageData),
+    {error, <<"Some error">>} = registration_app:register_package(PackageData),
 
     %% Check that the function was called correctly
     ?assert(meck:called(riak_kv, put, [<<"PKG123">>, PackageData])),
