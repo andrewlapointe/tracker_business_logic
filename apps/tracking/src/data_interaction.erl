@@ -3,5 +3,5 @@
 
 % Dummy implementation of the get/1 function
 get_package_status(_PackageId) ->
-    
-    ok.
+    % Return empty data
+    {ok, #{}}.
