@@ -26,7 +26,7 @@ registered({call, _From}, {track, PackageId, Time}, StateData) ->
     io:format("Package ~p registered at time ~p~n", [PackageId, Time]),
     %% Update the state with the registration time
     NewStateData = maps:put(PackageId, #{state => registered, registered_time => Time}, StateData),
-    {next_state, out, NewStateData, [{reply, ok}]}.
+    {next_state, out, NewStateData, [{reply, _From, ok}]}.
 
 %% State: out
 %% Records the time when the package is out for delivery and calculates time differences.
@@ -43,7 +43,7 @@ out({call, _From}, {package_update, PackageId, out, Time}, StateData) ->
             %% Update the state data
             UpdatedData = maps:put(PackageId, #{state => out, time_diff => TimeDiff}, Data),
             NewStateData = maps:put(PackageId, UpdatedData, StateData),
-            {next_state, out, NewStateData, [{reply, ok}]};
+            {next_state, out, NewStateData, [{reply, _From, ok}]};
         _ ->
             {keep_state, StateData, [{reply, {error, "No registered time found"}}]}
     end.
