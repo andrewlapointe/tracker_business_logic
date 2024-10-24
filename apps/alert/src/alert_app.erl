@@ -21,7 +21,7 @@ init([]) ->
 handle_event({system_alert, Message}, State) ->
     io:format("ALERT RECEIVED: ~p~n", [Message]),
     %% Default logging function
-    log_alert_to_file("log.txt", Message, fun file_log/2),
+    % log_alert_to_file("log.txt", Message, fun file_log/2),
     {ok, State}.
 
 %% Function to log alerts to a text file (with injected logging function for testability)
@@ -35,4 +35,5 @@ file_log(FileName, Message) ->
     file:close(File).
 
 terminate(_Reason, _State) ->
+    io:format("Terminating. ~n"),
     ok.
