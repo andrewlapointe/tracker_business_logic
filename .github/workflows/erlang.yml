@@ -2,25 +2,33 @@ name: Erlang CI
 
 on:
   push:
-    branches: ["main"]
+    branches:
+      - main
   pull_request:
-    branches: ["main"]
-
-permissions:
-  contents: read
+    branches:
+      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
-    container:
-      image: erlang:22.0.7
-
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Erlang/OTP
+        uses: erlef/setup-beam@v1
         with:
-          debug: true
-      - name: Compile
+          otp-version: 24 # Change to your desired version
+          rebar3-version: 3.18.0
+
+      - name: Install dependencies
+        run: |
+          rebar3 update
+          rebar3 deps
+
+      - name: Compile project
         run: rebar3 compile
-      - name: Run tests
-        run: rebar3 do eunit, ct
+
+      - name: Run EUnit tests
+        run: rebar3 eunit
