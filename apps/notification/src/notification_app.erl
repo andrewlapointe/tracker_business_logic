@@ -7,6 +7,7 @@
 %% API
 -export([start_link/0, start_link/1, notify/2, notify/3, send_notification_via_https/2]).
 -export([init/1, handle_event/2, terminate/2]).
+% Why are we exporting notify/3? Do we expect different names to be passed in?
 
 %% Client API
 start_link() ->
