@@ -1,9 +1,15 @@
-package_tracker
-=====
+# package_tracker
 
 An OTP application
 
-Build
------
+To build navigate to the projects root directory and run:
 
-    $ rebar3 compile
+```shell
+$ make
+```
+
+To build the project and open an interactive shell run:
+
+```shell
+$ make shell
+```
