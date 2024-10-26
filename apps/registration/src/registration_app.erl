@@ -24,7 +24,7 @@ handle_call({register, PackageData}, _From, State) ->
     %% Extract data from the map
     PackageId = maps:get(package_id, PackageData),
     %% Store in Riak (simulating here with riak_kv:put)
-    case riak_kv:put(PackageId, PackageData) of
+    case registration_db:put(PackageId, PackageData) of
         ok ->
             io:format("Package ~p registered successfully.~n", [PackageId]),
             {reply, {ok, "Package registered"}, State};
