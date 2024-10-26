@@ -34,14 +34,14 @@ register_package_success_test() ->
     PackageData = #{package_id => <<"PKG123">>, origin => <<"Origin">>, destination => <<"Destination">>, status => <<"pending">>},
 
     %% Mock riak_kv:put/2 to return 'ok'
-    meck:new(riak_kv),
-    meck:expect(riak_kv, put, fun(_PackageId, _PackageData) -> ok end),
+    meck:new(registration_db),
+    meck:expect(registration_db, put, fun(_PackageId, _PackageData) -> ok end),
 
     %% Call the registration function
     {ok, "Package registered"} = registration_app:register_package(PackageData),
 
     %% Check that the function was called correctly
-    ?assert(meck:called(riak_kv, put, [<<"PKG123">>, PackageData])),
+    ?assert(meck:called(registration_db, put, [<<"PKG123">>, PackageData])),
 
     %% Unload the mock
     meck:unload(),
@@ -52,14 +52,14 @@ register_package_failure_test() ->
     PackageData = #{package_id => <<"PKG123">>, origin => <<"Origin">>, destination => <<"Destination">>, status => <<"pending">>},
 
     %% Mock riak_kv:put/2 to return an error
-    meck:new(riak_kv),
-    meck:expect(riak_kv, put, fun(_PackageId, _PackageData) -> {error, <<"Some error">>} end),
+    meck:new(registration_db),
+    meck:expect(registration_db, put, fun(_PackageId, _PackageData) -> {error, <<"Some error">>} end),
 
     %% Call the registration function
     {error, <<"Some error">>} = registration_app:register_package(PackageData),
 
     %% Check that the function was called correctly
-    ?assert(meck:called(riak_kv, put, [<<"PKG123">>, PackageData])),
+    ?assert(meck:called(registration_db, put, [<<"PKG123">>, PackageData])),
 
     %% Unload the mock
     meck:unload(),
