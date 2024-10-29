@@ -6,8 +6,16 @@ all: clean compile test cover eqc xref dialyzer release
 # Run all checks (test, xref, dialyzer)
 check: test xref dialyzer cover
 
+fresh: rmlock rmbuild clean compile test cover eqc xref dialyzer release
+
 # Run compile, checks, then open shell
 shell: clean compile check shell
+
+rmlock:
+	$ rm -rf rebar.lock
+
+rmbuild:
+	$ rm -rf _build
 
 compile:
 	$(REBAR) compile
