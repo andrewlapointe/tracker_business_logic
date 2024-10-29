@@ -2,7 +2,15 @@
 [{<<"cowboy">>,{pkg,<<"cowboy">>,<<"2.12.0">>},0},
  {<<"cowlib">>,{pkg,<<"cowlib">>,<<"2.13.0">>},1},
  {<<"meck">>,{pkg,<<"meck">>,<<"0.9.2">>},0},
- {<<"ranch">>,{pkg,<<"ranch">>,<<"1.8.0">>},1}]}.
+ {<<"ranch">>,{pkg,<<"ranch">>,<<"1.8.0">>},1},
+ {<<"riak_client">>,
+  {git,"https://github.com/basho/riak-erlang-client",
+       {ref,"a35a69d82219c8d265b67d5017b767e1523dd672"}},
+  0},
+ {<<"riak_pb">>,
+  {git,"https://github.com/basho/riak_pb",
+       {ref,"7a5e535217c13a32f3041888b0d46e9b4476065c"}},
+  0}]}.
 [
 {pkg_hash,[
  {<<"cowboy">>, <<"F276D521A1FF88B2B9B4C54D0E753DA6C66DD7BE6C9FCA3D9418B561828A3731">>},
