@@ -5,7 +5,8 @@
   {mod, {analytics_app, []}},
   {applications,
    [kernel,
-    stdlib
+    stdlib,
+    meck
    ]},
   {env,[]},
   {modules, []},

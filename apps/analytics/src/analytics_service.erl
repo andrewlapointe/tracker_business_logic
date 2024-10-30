@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 -module(analytics_service).
 -behaviour(gen_statem).
 
@@ -82,3 +83,76 @@ log_to_file_if_needed(PackageId, TimeDiff) ->
             io:format("No log required for package ~p: TimeDiff = ~p seconds~n", [PackageId, TimeDiff]),
             ok
     end.
+=======
+-module(analytics_service).
+-behaviour(gen_statem).
+
+%% API
+-export([start_link/1, track_package/2]).
+-export([init/1, callback_mode/0, registered/3, out/3, handle_event/4, terminate/3, code_change/4]).
+
+
+%% Starts a gen_statem process for a specific package
+start_link(PackageId) ->
+    gen_statem:start_link({local, {analytics_service, PackageId}}, ?MODULE, [PackageId], []).
+
+
+%% API to start tracking a package's initial state
+track_package(PackageId, InitialTime) ->
+    gen_statem:call({analytics_service, PackageId}, {track, PackageId, InitialTime}).
+
+init([PackageId]) when is_integer(PackageId) ->
+    Timeout = 20 * 60 * 1000, %% 20 minutes
+    {ok, registered, #{package_id => PackageId}, Timeout};
+init(_) ->
+    {stop, {error, invalid_package_id}}.
+
+
+callback_mode() -> state_functions.
+
+%% State: registered - tracks the initial time
+registered({call, From}, {track, PackageId, Time}, StateData) ->
+    %% Update state data with initial registration time
+    NewStateData = maps:put(PackageId, #{state => registered, registered_time => Time}, StateData),
+    {next_state, out, NewStateData, {reply, From, ok}, 20 * 60 * 1000};
+registered(timeout, _, StateData) ->
+    {stop, normal, StateData}.
+
+%% State: out - handles package update to "out" state
+out({call, From}, {package_update, PackageId, out, Time}, StateData) ->
+    case maps:get(PackageId, StateData) of
+        #{registered_time := RegisteredTime} = Data ->
+            TimeDiff = calculate_time_difference(RegisteredTime, Time),
+            log_to_file_if_needed(PackageId, TimeDiff),
+            UpdatedData = maps:put(PackageId, #{state => out, time_diff => TimeDiff}, Data),
+            NewStateData = maps:put(PackageId, UpdatedData, StateData),
+            {next_state, out, NewStateData, {reply, From, ok}, 20 * 60 * 1000};
+        _ ->
+            {keep_state, StateData, {reply, From, {error, "No registered time found"}}}
+    end;
+out(timeout, _, StateData) ->
+    {stop, normal, StateData}.
+
+%% Handle unexpected events
+handle_event(_EventType, _EventContent, _State, Data) ->
+    {keep_state_and_data, Data}.
+
+terminate(_Reason, _State, _Data) -> ok.
+code_change(_OldVsn, State, Data, _Extra) -> {ok, State, Data}.
+
+%% Calculate the time difference
+calculate_time_difference(RegisteredTime, OutTime) ->
+    calendar:time_difference(RegisteredTime, OutTime).
+
+%% Logs if the time difference exceeds the threshold
+log_to_file_if_needed(PackageId, TimeDiff) ->
+    Threshold = 20 * 60, %% 20 minutes in seconds
+    if
+        TimeDiff > Threshold ->
+            case erlang:function_exported(log_handler, log_event, 2) of
+                true -> log_handler:log_event(PackageId, TimeDiff);
+                false -> ok  %% Skip if log_handler is unavailable
+            end;
+        true -> ok
+    end.
+>>>>>>> Stashed changes
