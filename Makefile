@@ -1,12 +1,12 @@
 REBAR = rebar3
 
 # Default target when running 'make'
-all: clean compile test cover eqc xref dialyzer release
+all: clean compile test release
 
 # Run all checks (test, xref, dialyzer)
 check: test xref dialyzer cover
 
-fresh: rmlock rmbuild clean compile test cover eqc xref dialyzer release
+fresh: rmlock rmbuild clean compile test release
 
 # Run compile, checks, then open shell
 shell: clean compile check shell
