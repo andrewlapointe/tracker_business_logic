@@ -11,5 +11,5 @@ port_number() ->
 generate_package_key() ->
     UniqueID = erlang:unique_integer([monotonic, positive]),
     Timestamp = calendar:datetime_to_gregorian_seconds(calendar:universal_time()),
-    Key = io_lib:format("pkg-~p-~p", [Timestamp, UniqueID]),
+    Key = io_lib:format("pkg-~p", [Timestamp + UniqueID]),
     list_to_binary(Key).
