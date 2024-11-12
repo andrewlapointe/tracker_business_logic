@@ -20,7 +20,7 @@ jobs:
         uses: erlef/setup-beam@v1
         with:
           otp-version: 25 # Change to your desired version
-          rebar3-version: 3.2.2.11
+          rebar3-version: 3.24.0
 
       - name: Install dependencies
         run: |
