@@ -6,7 +6,7 @@ riak_ip_address() ->
     "146.190.175.63".
 
 port_number() ->
-    "".
+    "8087".
 
 generate_package_key() ->
     UniqueID = erlang:unique_integer([monotonic, positive]),
