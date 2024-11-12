@@ -18,7 +18,19 @@ register_package(PackageData) ->
 
 %% gen_server callbacks
 init([]) ->
-    {ok, #{}}.
+    %% Replace with your actual Riak host and port
+    RiakHost = "198.199.88.218",
+    RiakPort = 8087,
+    Bucket = <<"bucket">>,
+    case riakc_pb_socket:start_link(RiakHost, RiakPort) of
+        {ok, RiakPid} ->
+            {ok, #{
+                riak_pid => RiakPid,
+                bucket => Bucket
+            }};
+        {error, Reason} ->
+            {stop, Reason}
+    end.
 
 handle_call({register, PackageData}, _From, State) ->
     %% Extract data from the map
@@ -33,7 +45,9 @@ handle_call({register, PackageData}, _From, State) ->
             {reply, {error, Reason}, State}
     end.
 
-terminate(_Reason, _State) ->
+terminate(_Reason, State) ->
+    RiakPid = maps:get(riak_pid, State),
+    riakc_pb_socket:stop(RiakPid),
     ok.
 
 code_change(_OldVsn, State, _Extra) ->
