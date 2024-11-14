@@ -9,7 +9,7 @@ start_link() ->
     %% Define routes
     Dispatch = cowboy_router:compile([
         {'', [
-            {"/register", registrationhttp_handler, []}
+            {"/register", registration_http_handler, []}
         ]}
     ]),
 
