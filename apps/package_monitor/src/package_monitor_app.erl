@@ -22,7 +22,7 @@ init([]) ->
 
 handle_cast({update_db_record, PackageId, Data}, State) ->
     %% Store data in Riak using the package ID as the key
-    case pm_db:put(PackageId, Data) of
+    case pm_db:update(PackageId, Data) of
         ok ->
             %% Notify the Notification Service
             notification_app:notify(PackageId, Data),
