@@ -31,7 +31,9 @@ cleanup(_) ->
 %% Test for successful package registration
 register_package_success_test() ->
     %% Define mock data
-    PackageData = #{package_id => <<"PKG123">>, origin => <<"Origin">>, destination => <<"Destination">>, status => <<"pending">>},
+    % PackageData = #{package_id => <<"PKG123">>, origin => <<"Origin">>, destination => <<"Destination">>, status => <<"pending">>},
+    PackageID = utils:generate_package_key(),
+    PackageData = #{package_id => PackageID , origin => <<"Origin">>, destination => <<"Destination">>, status => <<"pending">>},
 
     %% Mock riak_kv:put/2 to return 'ok'
     meck:new(registration_db),
@@ -41,7 +43,8 @@ register_package_success_test() ->
     {ok, "Package registered"} = registration_app:register_package(PackageData),
 
     %% Check that the function was called correctly
-    ?assert(meck:called(registration_db, put, [<<"PKG123">>, PackageData])),
+    % ?assert(meck:called(registration_db, put, [<<"PKG123">>, PackageData])),
+    ?assert(meck:called(registration_db, put, [PackageID, PackageData])),
 
     %% Unload the mock
     meck:unload(),
@@ -49,7 +52,9 @@ register_package_success_test() ->
 
 register_package_failure_test() ->
     %% Define mock data
-    PackageData = #{package_id => <<"PKG123">>, origin => <<"Origin">>, destination => <<"Destination">>, status => <<"pending">>},
+    % PackageData = #{package_id => <<"PKG123">>, origin => <<"Origin">>, destination => <<"Destination">>, status => <<"pending">>},
+    PackageID = utils:generate_package_key(),
+    PackageData = #{package_id => PackageID, origin => <<"Origin">>, destination => <<"Destination">>, status => <<"pending">>},
 
     %% Mock riak_kv:put/2 to return an error
     meck:new(registration_db),
@@ -59,7 +64,7 @@ register_package_failure_test() ->
     {error, <<"Some error">>} = registration_app:register_package(PackageData),
 
     %% Check that the function was called correctly
-    ?assert(meck:called(registration_db, put, [<<"PKG123">>, PackageData])),
+    ?assert(meck:called(registration_db, put, [PackageID, PackageData])),
 
     %% Unload the mock
     meck:unload(),
