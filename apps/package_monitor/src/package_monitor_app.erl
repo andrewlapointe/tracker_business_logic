@@ -22,14 +22,14 @@ init([]) ->
 
 handle_cast({update_db_record, PackageId, Data}, State) ->
     %% Store data in Riak using the package ID as the key
-    case pm_db:update(PackageId, Data) of
+    case riakc_pb_socket:update(PackageId, Data) of
         ok ->
             %% Notify the Notification Service
             notification_app:notify(PackageId, Data),
             % io:format("Package ~p updated successfully with data: ~p.~n", [PackageId, Data]),
             {noreply, State};
         {error, Reason} ->
-            % io:format("Failed to update package ~p: ~p.~n", [PackageId, Reason]),
+            io:format("Failed to update package ~p: ~p.~n", [PackageId, Reason]),
             {noreply, State}
     end.
 
