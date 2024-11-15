@@ -51,7 +51,7 @@ handle_cast({update_db_record, PackageId, Data}, State) ->
                     case riakc_pb_socket:put(RiakPid, UpdatedObject) of
                         ok ->
                             % Notify the Notification Service
-                            notification_app:notify(PackageId, UpdatedMap),
+                            % notification_app:notify(PackageId, UpdatedMap),
                             io:format("Package ~p updated successfully with data: ~p.~n", [PackageId, UpdatedMap]),
                             {noreply, State};
                         {error, Reason} ->
