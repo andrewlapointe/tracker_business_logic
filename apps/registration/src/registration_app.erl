@@ -18,7 +18,6 @@ register_package(PackageData) ->
 
 %% gen_server callbacks
 init([]) ->
-    % Replace with your actual Riak host and port
     RiakHost = utils:riak_ip_address(),
     RiakPort = utils:port_number(),
     Bucket = <<"bucket">>,

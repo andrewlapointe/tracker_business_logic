@@ -18,10 +18,21 @@ update_db_record(PackageId, Data) ->
 
 %% gen_server callbacks
 init([]) ->
-    {ok, #{}}.
+    RiakHost = utils:riak_ip_address(),
+    RiakPort = utils:port_number(),
+    Bucket = <<"bucket">>,
+    case riakc_pb_socket:start_link(RiakHost, RiakPort) of
+        {ok, RiakPid} ->
+            {ok, #{
+                riak_pid => RiakPid,
+                bucket => Bucket
+            }};
+        {error, Reason} ->
+            {stop, Reason}
+    end.
 
 handle_cast({update_db_record, PackageId, Data}, State) ->
-    %% Store data in Riak using the package ID as the key
+    PackageId = maps:get(package_id, Data),
     case riakc_pb_socket:update(PackageId, Data) of
         ok ->
             %% Notify the Notification Service
