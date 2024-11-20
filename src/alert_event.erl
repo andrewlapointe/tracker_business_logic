@@ -1,5 +1,9 @@
--module(alert_app).
+-module(alert_event).
 -behaviour(gen_event).
+
+% ==================================
+% TODO: This does not work. Needs to record data somewhere. Could be a text file or similar.
+% ==================================
 
 %% API
 -export([start_link/0, raise_alert/1, log_alert_to_file/3]).
@@ -9,7 +13,6 @@
 start_link() ->
     gen_event:start_link({local, ?MODULE}).
 
-%% Function to raise an alert (used by supervisors)
 raise_alert(AlertMessage) ->
     gen_event:notify(?MODULE, {system_alert, AlertMessage}).
 
@@ -20,8 +23,6 @@ init([]) ->
 %% Handle the alert event
 handle_event({system_alert, Message}, State) ->
     io:format("ALERT RECEIVED: ~p~n", [Message]),
-    %% Default logging function
-    % log_alert_to_file("log.txt", Message, fun file_log/2),
     {ok, State}.
 
 %% Function to log alerts to a text file (with injected logging function for testability)

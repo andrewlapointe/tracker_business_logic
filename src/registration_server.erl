@@ -1,12 +1,10 @@
--module(registration_app).
+-module(registration_server).
 -behaviour(gen_server).
 
 %% API
 -export([start_link/0, register_package/1]).
+-export([handle_info/2]).
 -export([init/1, handle_call/3, terminate/2, code_change/3]).
-
-%% Record for storing package data
--record(package, {package_id, origin, destination, status}).
 
 %% Client API
 start_link() ->
@@ -21,21 +19,12 @@ init([]) ->
     RiakHost = utils:riak_ip_address(),
     RiakPort = utils:port_number(),
     Bucket = <<"bucket">>,
-    case riakc_pb_socket:start_link(RiakHost, RiakPort) of
-        {ok, RiakPid} ->
-            {ok, #{
-                riak_pid => RiakPid,
-                bucket => Bucket
-            }};
-        {error, Reason} ->
-            {stop, Reason}
-    end.
-    % {ok, #{}}.
+    %% Send a message to self to establish connection asynchronously
+    self() ! {connect_riak, RiakHost, RiakPort},
+    {ok, #{bucket => Bucket, riak_pid => undefined}}.
 
 handle_call({register, PackageData}, _From, State) ->
-    %% Extract data from the map
     PackageId = maps:get(package_id, PackageData),
-    %% Store in Riak (simulating here with riak_kv:put)
     case put(PackageId, PackageData, State) of
         {reply, ok, State} ->
             io:format("Package ~p registered successfully.~n", [PackageId]),
@@ -44,6 +33,22 @@ handle_call({register, PackageData}, _From, State) ->
             io:format("Failed to register package ~p: ~p~n", [PackageId, Reason]),
             {reply, {error, Reason}, State}
     end.
+
+handle_info({connect_riak, RiakHost, RiakPort}, State) ->
+    case riakc_pb_socket:start_link(RiakHost, RiakPort) of
+        {ok, RiakPid} ->
+            NewState = State#{riak_pid => RiakPid},
+            {noreply, NewState};
+        {error, Reason} ->
+            %% Handle the connection error, possibly retry
+            io:format("Failed to connect to Riak: ~p~n", [Reason]),
+            %% Decide whether to retry, stop, or continue without Riak
+            {stop, Reason, State}
+    end;
+
+handle_info(_Msg, State) ->
+    {noreply, State}.
+
 
 
 put(Key, Value, State) ->

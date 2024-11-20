@@ -1,13 +1,15 @@
-% Notification Service Using gen_event
-% Here’s the code for the Notification Service that aligns with the updated structure:
-
--module(notification_app).
+-module(notification_event).
 -behaviour(gen_event).
+
+% ==================================
+% TODO: This does not work. Needs to record notifications somewhere. Could be a text file or similar.
+%       Does not need to be HTTPS as code implies.
+% ==================================
+
 
 %% API
 -export([start_link/0, start_link/1, notify/2, notify/3, send_notification_via_https/2]).
 -export([init/1, handle_event/2, terminate/2]).
-% Why are we exporting notify/3? Do we expect different names to be passed in?
 
 %% Client API
 start_link() ->
@@ -28,9 +30,6 @@ init([]) ->
 
 %% Handle the event for package updates
 handle_event({package_update, PackageId, Status}, State) ->
-    %% Here, handle the notification logic for a status change
-    % io:format("Received update for package ~p with status: ~p~n", [PackageId, Status]),
-    %% Call a function to send the notification via HTTPS (e.g., email or other)
     send_notification_via_https(PackageId, Status),
     {ok, State}.
 

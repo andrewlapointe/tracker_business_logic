@@ -1,18 +1,15 @@
-% Tracking Service (gen_server)
-% The gen_server will handle requests for package information by querying Riak.
-
--module(tracking_app).
+-module(tracking_server).
 -behaviour(gen_server).
 
 %% API
 -export([start_link/0, get_status/1]).
+-export([handle_info/2]).
 -export([init/1, handle_call/3, terminate/2, code_change/3]).
 
 %% Client API
 start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
-%% Get the status of a package by its PackageId
 get_status(PackageId) ->
     gen_server:call(?MODULE, {get_status, PackageId}).
 
@@ -21,18 +18,11 @@ init([]) ->
     RiakHost = utils:riak_ip_address(),
     RiakPort = utils:port_number(),
     Bucket = <<"bucket">>,
-        case riakc_pb_socket:start_link(RiakHost, RiakPort) of
-        {ok, RiakPid} ->
-            {ok, #{
-                riak_pid => RiakPid,
-                bucket => Bucket
-            }};
-        {error, Reason} ->
-            {stop, Reason}
-    end.
+    %% Send a message to self to establish connection asynchronously
+    self() ! {connect_riak, RiakHost, RiakPort},
+    {ok, #{bucket => Bucket, riak_pid => undefined}}.
 
 handle_call({get_status, PackageId}, _From, State) ->
-    %% Fetch the package status from the data_interaction module
     case get_package_status(PackageId, State) of
         {ok, Data} ->
             case catch binary_to_term(Data) of
@@ -46,6 +36,21 @@ handle_call({get_status, PackageId}, _From, State) ->
         {error, Reason} ->
             {reply, {error, Reason}, State}
     end.
+
+handle_info({connect_riak, RiakHost, RiakPort}, State) ->
+    case riakc_pb_socket:start_link(RiakHost, RiakPort) of
+        {ok, RiakPid} ->
+            NewState = State#{riak_pid => RiakPid},
+            {noreply, NewState};
+        {error, Reason} ->
+            %% Handle the connection error, possibly retry
+            io:format("Failed to connect to Riak: ~p~n", [Reason]),
+            %% Decide whether to retry, stop, or continue without Riak
+            {stop, Reason, State}
+    end;
+
+handle_info(_Msg, State) ->
+    {noreply, State}.
 
 get_package_status(PackageId, State) ->
     RiakPid = maps:get(riak_pid, State),
