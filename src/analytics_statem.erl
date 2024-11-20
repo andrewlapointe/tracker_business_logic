@@ -1,5 +1,9 @@
--module(analytics_app).
+-module(analytics_statem).
 -behaviour(gen_statem).
+
+% ==================================
+% TODO: This does not work. Needs to record data somewhere. Could be a text file or similar.
+% ==================================
 
 %% API
 -export([start_link/0, track_package/2]).
@@ -9,11 +13,9 @@
 start_link() ->
     gen_statem:start_link({local, ?MODULE}, ?MODULE, [], []).
 
-%% Function to start tracking a package with its initial state
 track_package(PackageId, InitialTime) ->
     gen_statem:call(?MODULE, {track, PackageId, InitialTime}).
 
-%% Initialize the state machine with a default state
 init([]) ->
     {ok, registered, #{}}.
 
@@ -32,15 +34,13 @@ registered({call, _From}, {track, PackageId, Time}, StateData) ->
 %% Records the time when the package is out for delivery and calculates time differences.
 out({call, _From}, {package_update, PackageId, out, Time}, StateData) ->
     io:format("Package ~p updated to 'out' state at time ~p~n", [PackageId, Time]),
-    %% Get the registered time
     case maps:get(PackageId, StateData) of
         #{registered_time := RegisteredTime} = Data ->
-            %% Calculate the time difference
             TimeDiff = calculate_time_difference(RegisteredTime, Time),
             io:format("Time difference for package ~p is ~p seconds~n", [PackageId, TimeDiff]),
             %% Log the event through a handler if it exceeds the threshold
             log_to_file_if_needed(PackageId, TimeDiff),
-            %% Update the state data
+
             UpdatedData = maps:put(PackageId, #{state => out, time_diff => TimeDiff}, Data),
             NewStateData = maps:put(PackageId, UpdatedData, StateData),
             {next_state, out, NewStateData, [{reply, _From, ok}]};
