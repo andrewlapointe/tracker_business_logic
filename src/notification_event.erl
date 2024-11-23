@@ -29,14 +29,7 @@ init([]) ->
 
 %% Handle the event for package updates
 handle_event({package_update, PackageId, Status}, State) ->
-    case send_notification_via_https(PackageId, Status) of
-        ok ->
-            io:format("Notification sent successfully for Package ~p with Status: ~p~n", [
-                PackageId, Status
-            ]);
-        {error, Reason} ->
-            io:format("Failed to send notification: ~p~n", [Reason])
-    end,
+    record_notification(PackageId, Status),
     {ok, State}.
 
 %% Function to simulate sending a notification
@@ -72,3 +65,15 @@ send_notification_via_https(PackageId, Status) ->
 
 terminate(_Reason, _State) ->
     ok.
+
+record_notification(PackageId, Status) ->
+    File = "notifications.log",
+    Entry = io_lib:format("Package ~p: ~p~n", [PackageId, Status]),
+    case file:write_file(File, Entry, [append]) of
+        ok ->
+            io:format("Notification recorded: Package ~p with Status ~p~n", [PackageId, Status]),
+            ok;
+        {error, Reason} ->
+            io:format("Failed to record notification: ~p~n", [Reason]),
+            {error, Reason}
+    end.
