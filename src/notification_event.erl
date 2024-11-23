@@ -42,7 +42,7 @@ handle_event({package_update, PackageId, Status}, State) ->
 %% Function to simulate sending a notification
 send_notification_via_https(PackageId, Status) ->
     %% Define the HTTPS endpoint
-    URL = "https://example.com/notifications",
+    URL = "https://cowboy.mpc-us.com/",
 
     %% Construct the JSON payload
     Payload = jsx:encode(#{package_id => PackageId, status => Status}),
