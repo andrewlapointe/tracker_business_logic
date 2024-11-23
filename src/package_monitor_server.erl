@@ -25,7 +25,7 @@ init([]) ->
 handle_cast({update_db_record, PackageId, Data}, State) ->
     RiakPid = maps:get(riak_pid, State),
     Bucket = maps:get(bucket, State),
-    BinaryKey = integer_to_binary(PackageId),
+    BinaryKey = integer_to_binary(list_to_integer(PackageId)),
 
     % Step 1: Fetch the current object
     case riakc_pb_socket:get(RiakPid, Bucket, BinaryKey) of
