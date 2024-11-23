@@ -67,7 +67,7 @@ terminate(_Reason, _State) ->
     ok.
 
 record_notification(PackageId, Status) ->
-    File = "notifications.log",
+    File = "/home/atyson/tracker_business_logic/notifications.log",
     Entry = io_lib:format("Package ~p: ~p~n", [PackageId, Status]),
     case file:write_file(File, Entry, [append]) of
         ok ->
