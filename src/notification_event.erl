@@ -29,6 +29,7 @@ init([]) ->
 
 %% Handle the event for package updates
 handle_event({package_update, PackageId, Status}, State) ->
+    io:format("Handling event: PackageId=~p, Status=~p~n", [PackageId, Status]),
     record_notification(PackageId, Status),
     {ok, State}.
 
