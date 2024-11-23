@@ -72,12 +72,3 @@ send_notification_via_https(PackageId, Status) ->
 
 terminate(_Reason, _State) ->
     ok.
-
-%% Function to record notification in a log file
-record_notification(PackageId, Status) ->
-    File = "notifications.log",
-    Notification = io_lib:format("Package ~p: ~p~n", [PackageId, Status]),
-    case file:write_file(File, Notification, [append]) of
-        ok -> ok;
-        {error, Reason} -> {error, Reason}
-    end.
