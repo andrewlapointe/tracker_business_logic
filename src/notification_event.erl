@@ -69,14 +69,29 @@ terminate(_Reason, _State) ->
 
 record_notification(PackageId, Status) ->
     File = "/home/atyson/tracker_business_logic/notifications.log",
+    case filelib:is_dir("/home/atyson/tracker_business_logic/") of
+        true ->
+            write_to_file(File, PackageId, Status);
+        false ->
+            io:format("Directory does not exist. Creating directory...~n"),
+            case file:make_dir("/home/atyson/tracker_business_logic/") of
+                ok ->
+                    write_to_file(File, PackageId, Status);
+                {error, Reason} ->
+                    io:format("Failed to create directory: ~p~n", [Reason]),
+                    {error, Reason}
+            end
+    end.
+
+write_to_file(File, PackageId, Status) ->
     Entry = io_lib:format("Package ~p: ~p~n", [PackageId, Status]),
     io:format("Attempting to write to file: ~p~n", [File]),
     io:format("Log entry: ~s~n", [Entry]),
     case file:write_file(File, Entry, [append]) of
         ok ->
-            io:format("Notification recorded successfully: ~p - Status: ~p~n", [PackageId, Status]),
+            io:format("File write successful: ~p~n", [File]),
             ok;
         {error, Reason} ->
-            io:format("Failed to record notification: ~p~n", [Reason]),
+            io:format("File write failed: ~p~n", [Reason]),
             {error, Reason}
     end.
