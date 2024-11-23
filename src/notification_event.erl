@@ -69,9 +69,11 @@ terminate(_Reason, _State) ->
 record_notification(PackageId, Status) ->
     File = "/home/atyson/tracker_business_logic/notifications.log",
     Entry = io_lib:format("Package ~p: ~p~n", [PackageId, Status]),
+    io:format("Attempting to write to file: ~p~n", [File]),
+    io:format("Log entry: ~s~n", [Entry]),
     case file:write_file(File, Entry, [append]) of
         ok ->
-            io:format("Notification recorded: Package ~p with Status ~p~n", [PackageId, Status]),
+            io:format("Notification recorded successfully: ~p - Status: ~p~n", [PackageId, Status]),
             ok;
         {error, Reason} ->
             io:format("Failed to record notification: ~p~n", [Reason]),
