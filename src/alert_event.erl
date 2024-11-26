@@ -1,12 +1,8 @@
 -module(alert_event).
 -behaviour(gen_event).
 
-% ==================================
-% TODO: This does not work. Needs to record data somewhere. Could be a text file or similar.
-% ==================================
-
 %% API
--export([start_link/0, raise_alert/1, log_alert_to_file/3]).
+-export([start_link/0, raise_alert/1]).
 -export([init/1, handle_event/2, terminate/2]).
 
 %% Client API
@@ -18,23 +14,70 @@ raise_alert(AlertMessage) ->
 
 %% gen_event callbacks
 init([]) ->
-    {ok, #{}}.
+    %% Specify the log file path here or pass it dynamically as part of State.
+    LogFile = "alerts.log",
 
-%% Handle the alert event
+    %% Debugging: Print the initialized log file
+    io:format("Initializing with log file: ~s~n", [LogFile]),
+
+    %% Initialize the state
+    {ok, #{log_file => LogFile}}.
+
+%% Handle the alert event and log to file
 handle_event({system_alert, Message}, State) ->
+    %% Log to console
     io:format("ALERT RECEIVED: ~p~n", [Message]),
+
+    %% Extract log file path from State
+    LogFile = maps:get(log_file, State),
+    io:format("Using log file: ~s~n", [LogFile]),
+
+    %% Attempt to log to file
+    case log_alert_to_file(LogFile, Message) of
+        ok ->
+            io:format("Alert successfully logged to file: ~s~n", [LogFile]);
+        {error, Reason} ->
+            io:format("Failed to log alert to file: ~p~n", [Reason])
+    end,
+    {ok, State};
+
+handle_event(_Event, State) ->
     {ok, State}.
 
-%% Function to log alerts to a text file (with injected logging function for testability)
-log_alert_to_file(FileName, Message, LogFunc) ->
-    LogFunc(FileName, Message).
+% ensure_directory_exists(FilePath) ->
+%     case file:make_dir_all(filename:dirname(FilePath)) of
+%         ok -> ok;
+%         {error, Reason} ->
+%             io:format("Failed to create directory for file: ~p~n", [Reason])
+%     end.
+    
+%% Log alerts to a text file
+log_alert_to_file(FileName, Message) ->
+    % io:format("Opening file: ~s~n", [FileName]),
+    % case file:open(FileName, [append]) of
+    %     {ok, File} ->
+    %         % Write the data with the current timestamp
+    %         io:format(File, "ALERT: ~s - Timestamp: ~p~n", [Message, calendar:local_time()]),
+    %         file:close(File),
+    %         ok;
+    %     {error, Reason} ->
+    %         io:format("Failed to open file: ~p~n", [Reason]),
+    %         {error, Reason}
+    % end.
 
-%% Default file logging function (used in production)
-file_log(FileName, Message) ->
-    {ok, File} = file:open(FileName, [append]),
-    io:format(File, "ALERT: ~p - Timestamp: ~p~n", [Message, calendar:local_time()]),
-    file:close(File).
+    io:format("Attempting to write to file: ~s~n", [FileName]),
+    case file:open(FileName, [append]) of
+        {ok, File} ->
+            io:format("File opened successfully: ~s~n", [FileName]),
+            io:format(File, "ALERT: ~s - Timestamp: ~p~n", [Message, calendar:local_time()]),
+            file:close(File),
+            io:format("File written and closed successfully: ~s~n", [FileName]),
+            ok;
+        {error, Reason} ->
+            io:format("Failed to open file: ~p~n", [Reason]),
+            {error, Reason}
+    end.
 
 terminate(_Reason, _State) ->
-    io:format("Terminating. ~n"),
+    io:format("Terminating.~n"),
     ok.

@@ -1,5 +1,6 @@
 -module(alert_service_test).
 -include_lib("eunit/include/eunit.hrl").
+-define(TEST_LOG_FILE, "test_log.txt").
 
 %% Test functions
 alert_service_test_() ->
@@ -15,14 +16,15 @@ alert_service_test_() ->
 
 %% Setup function to start the alert service
 setup() ->
-    case alert_app:start_link() of
+    case alert_event:start_link() of
         {ok, _Pid} -> ok;
         {error, {already_started, _Pid}} -> ok
     end.
 
 %% Cleanup function
 cleanup(_) ->
-    ok.
+    % ok.
+    file:delete(?TEST_LOG_FILE).
 
 %% Custom logging function for testing
 mock_log(FileName, Message) ->
@@ -34,13 +36,24 @@ raise_alert_test() ->
     AlertMessage = <<"Test Alert">>,
 
     %% Call the alert service directly and inject the mock log function
-    alert_app:log_alert_to_file("test_log.txt", AlertMessage, fun mock_log/2),
+    alert_event:log_alert_to_file(?TEST_LOG_FILE, AlertMessage, fun mock_log/2),
 
     %% Capture the expected output, flatten the list for comparison
-    ExpectedOutput = lists:flatten("MOCK LOG: FileName = \"test_log.txt\", Message = \"Test Alert\"\n"),
+    ExpectedOutput = "MOCK LOG: FileName = \"test_log.txt\", Message = \"Test Alert\"\n",
 
     %% Capture the actual output from io_lib:format and convert binary to list
-    ActualOutput = lists:flatten(io_lib:format("MOCK LOG: FileName = ~p, Message = ~p~n", ["test_log.txt", binary_to_list(AlertMessage)])),
+    ActualOutput = lists:flatten(io_lib:format("MOCK LOG: FileName = ~p, Message = ~p~n", [?TEST_LOG_FILE, AlertMessage])),
 
     %% Compare the expected and actual output
     ?assertEqual(ExpectedOutput, ActualOutput).
+
+%% Additional test to verify file contents
+check_file_logging_test() ->
+    %% Raise an alert that logs to the default file logger
+    AlertMessage = <<"Persistent Test Alert">>,
+    alert_event:log_alert_to_file(?TEST_LOG_FILE, AlertMessage, fun alert_event:file_log/2),
+
+    %% Read the file and verify it contains the correct log entry
+    {ok, BinaryContents} = file:read_file(?TEST_LOG_FILE),
+    FileContents = binary_to_list(BinaryContents),
+    ?assert(list_to_binary("ALERT: \"Persistent Test Alert\" - Timestamp: ") =:= binary:part(FileContents, 0, 33)).
