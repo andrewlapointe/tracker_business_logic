@@ -7,7 +7,9 @@
 
 %% Client API
 start_link() ->
-    gen_event:start_link({local, ?MODULE}).
+    {ok, Pid} = gen_event:start_link({local, ?MODULE}),
+    gen_event:add_handler(?MODULE, ?MODULE, []),
+    {ok, Pid}.
 
 raise_alert(AlertMessage) ->
     gen_event:notify(?MODULE, {system_alert, AlertMessage}).
@@ -18,13 +20,14 @@ init([]) ->
     LogFile = "alerts.log",
 
     %% Debugging: Print the initialized log file
-    io:format("Initializing with log file: ~s~n", [LogFile]),
+    io:format("Initializing with log file: ~p~n", [LogFile]),
 
     %% Initialize the state
     {ok, #{log_file => LogFile}}.
 
 %% Handle the alert event and log to file
 handle_event({system_alert, Message}, State) ->
+    
     %% Log to console
     io:format("ALERT RECEIVED: ~p~n", [Message]),
 
@@ -34,14 +37,15 @@ handle_event({system_alert, Message}, State) ->
 
     %% Attempt to log to file
     case log_alert_to_file(LogFile, Message) of
-        ok ->
+        ok -> 
             io:format("Alert successfully logged to file: ~s~n", [LogFile]);
         {error, Reason} ->
-            io:format("Failed to log alert to file: ~p~n", [Reason])
+            io:format(standard_io, "Failed to log alert to file: ~p~n", [Reason])
     end,
     {ok, State};
 
 handle_event(_Event, State) ->
+    io:format("Unhandled event.~n"),
     {ok, State}.
     
 %% Log alerts to a text file
