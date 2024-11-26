@@ -3,7 +3,7 @@
 
 %% API
 -export([start_link/0, raise_alert/1]).
--export([init/1, handle_event/2, terminate/2]).
+-export([init/1, handle_event/2, terminate/2, log_alert_to_file/2]).
 
 %% Client API
 start_link() ->
@@ -43,28 +43,9 @@ handle_event({system_alert, Message}, State) ->
 
 handle_event(_Event, State) ->
     {ok, State}.
-
-% ensure_directory_exists(FilePath) ->
-%     case file:make_dir_all(filename:dirname(FilePath)) of
-%         ok -> ok;
-%         {error, Reason} ->
-%             io:format("Failed to create directory for file: ~p~n", [Reason])
-%     end.
     
 %% Log alerts to a text file
 log_alert_to_file(FileName, Message) ->
-    % io:format("Opening file: ~s~n", [FileName]),
-    % case file:open(FileName, [append]) of
-    %     {ok, File} ->
-    %         % Write the data with the current timestamp
-    %         io:format(File, "ALERT: ~s - Timestamp: ~p~n", [Message, calendar:local_time()]),
-    %         file:close(File),
-    %         ok;
-    %     {error, Reason} ->
-    %         io:format("Failed to open file: ~p~n", [Reason]),
-    %         {error, Reason}
-    % end.
-
     io:format("Attempting to write to file: ~s~n", [FileName]),
     case file:open(FileName, [append]) of
         {ok, File} ->
