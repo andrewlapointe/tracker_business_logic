@@ -23,7 +23,7 @@ handle_event({package_update, PackageId, Status}, State) ->
     {ok, State}.
 
 ensure_logs_directory() ->
-    case file:make_dir("../logs") of
+    case file:make_dir("./logs") of
         % Directory already exists
         {error, eexist} ->
             ok;
