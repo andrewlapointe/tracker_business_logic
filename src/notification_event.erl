@@ -44,7 +44,7 @@ send_notification_to_log(PackageId, Status) ->
     Payload = jsx:encode(#{package_id => PackageId, status => Status}),
 
     %% Define the log file path
-    LogFile = "/Users/adamtyson/Desktop/CSE 481/tracker_business_logic/logs/notification_event.log",
+    LogFile = "./logs/notification_event.log",
 
     %% Append the JSON data to the log file
     case file:open(LogFile, [append]) of
