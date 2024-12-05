@@ -28,6 +28,9 @@ handle_call({register, PackageData}, _From, State) ->
     case put(PackageId, PackageData, State) of
         {reply, ok, State} ->
             io:format("Package ~p registered successfully.~n", [PackageId]),
+
+            notify_analytics(PackageId),
+
             {reply, {ok, "Package registered"}, State};
         {error, Reason} ->
             io:format("Failed to register package ~p: ~p~n", [PackageId, Reason]),
@@ -49,8 +52,6 @@ handle_info({connect_riak, RiakHost, RiakPort}, State) ->
 handle_info(_Msg, State) ->
     {noreply, State}.
 
-
-
 put(Key, Value, State) ->
     RiakPid = maps:get(riak_pid, State),
     Bucket = maps:get(bucket, State),
@@ -61,6 +62,16 @@ put(Key, Value, State) ->
             {reply, ok, State};
         {error, Reason} ->
             {reply, {error, Reason}, State}
+    end.
+
+%% Notify analytics_statem of the registered package
+notify_analytics(PackageId) ->
+    CurrentTime = erlang:localtime(),
+    case analytics_statem:track_package(PackageId, CurrentTime) of
+        ok ->
+            io:format("Analytics notified for package ~p at ~p~n", [PackageId, CurrentTime]);
+        {error, Reason} ->
+            io:format("Failed to notify analytics for package ~p: ~p~n", [PackageId, Reason])
     end.
 
 terminate(_Reason, State) ->
