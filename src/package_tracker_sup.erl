@@ -20,9 +20,11 @@ init([]) ->
     SupFlags = #{strategy => one_for_all,
                  intensity => 0,
                  period => 1},
-    ChildSpecs = [child(tracking_server, worker),
+    ChildSpecs = [
+        child(tracking_server, worker),
         child(registration_server, worker),
-        child(package_monitor_server, worker)],
+        child(package_monitor_server, worker),
+        child(alert_event, worker)],
     {ok, {SupFlags, ChildSpecs}}.
 
 %% internal functions
@@ -39,3 +41,4 @@ child(Module,Type)->
 	  shutdown => 2000,
 	  type => Type,
 	  modules => [Module]}.
+    

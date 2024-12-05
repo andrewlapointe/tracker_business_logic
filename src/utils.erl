@@ -3,7 +3,8 @@
 
 riak_ip_address() ->
     % Change this to match the ip address of your riak droplet
-    "206.81.11.205".
+    % "206.81.11.205".
+    "24.144.84.21".
 
 port_number() ->
     8087.

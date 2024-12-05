@@ -5,6 +5,7 @@
 -export([start_link/0, raise_alert/1]).
 -export([init/1, handle_event/2, terminate/2, log_alert_to_file/2, ensure_logs_directory/0]).
 
+
 %% Client API
 start_link() ->
     {ok, Pid} = gen_event:start_link({local, ?MODULE}),
