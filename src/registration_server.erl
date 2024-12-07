@@ -78,7 +78,7 @@ code_change(_OldVsn, State, _Extra) ->
 parse_package_data(BinaryData) ->
     %% Example: Decode URL-encoded binary data into a map
     try
-        Decoded = http_uri:parse_query(BinaryData),
+        Decoded = http_uri:parse_query(binary_to_list(BinaryData)),
         {ok, maps:from_list(Decoded)}
     catch
         _:_ -> {error, invalid_data}
