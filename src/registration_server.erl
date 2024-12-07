@@ -2,69 +2,101 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/0, register_package/1]).
--export([handle_info/2]).
--export([init/1, handle_call/3, terminate/2, code_change/3]).
+-export([start_link/0, register_package/1, parse_package_data/1]).
+-export([init/1, handle_call/3, handle_info/2, terminate/2, code_change/3]).
 
 %% Client API
 start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
-%% Function to handle registration data received as a map
 register_package(PackageData) ->
-    gen_server:call(?MODULE, {register, PackageData}).
+    %% Pass the binary data to the gen_server
+    gen_server:call(?MODULE, {register_package, PackageData}).
 
 %% gen_server callbacks
 init([]) ->
     RiakHost = utils:riak_ip_address(),
     RiakPort = utils:port_number(),
     Bucket = <<"bucket">>,
-    %% Send a message to self to establish connection asynchronously
+    %% Send a message to self to initiate connection
     self() ! {connect_riak, RiakHost, RiakPort},
-    {ok, #{bucket => Bucket, riak_pid => undefined}}.
-
-handle_call({register, PackageData}, _From, State) ->
-    PackageId = maps:get(package_id, PackageData),
-    case put(PackageId, PackageData, State) of
-        {reply, ok, State} ->
-            io:format("Package ~p registered successfully.~n", [PackageId]),
-
-            notify_analytics(PackageId),
-
-            {reply, {ok, "Package registered"}, State};
-        {error, Reason} ->
-            io:format("Failed to register package ~p: ~p~n", [PackageId, Reason]),
-            {reply, {error, Reason}, State}
-    end.
+    {ok, #{bucket => Bucket, riak_pid => undefined, retry_count => 0}}.
 
 handle_info({connect_riak, RiakHost, RiakPort}, State) ->
+    %% Attempt to connect to Riak
     case riakc_pb_socket:start_link(RiakHost, RiakPort) of
         {ok, RiakPid} ->
-            NewState = State#{riak_pid => RiakPid},
+            io:format("Successfully connected to Riak.~n"),
+            NewState = State#{riak_pid => RiakPid, retry_count => 0},
             {noreply, NewState};
         {error, Reason} ->
-            %% Handle the connection error, possibly retry
             io:format("Failed to connect to Riak: ~p~n", [Reason]),
-            %% Decide whether to retry, stop, or continue without Riak
-            {stop, Reason, State}
+            RetryCount = maps:get(retry_count, State, 0),
+            case RetryCount of
+                5 ->
+                    io:format("Max retries reached. Stopping server.~n"),
+                    {stop, Reason, State};
+                _ ->
+                    %% Retry connection after a delay
+                    timer:sleep(1000),
+                    NewState = State#{retry_count => RetryCount + 1},
+                    self() ! {connect_riak, RiakHost, RiakPort},
+                    {noreply, NewState}
+            end
     end;
 
 handle_info(_Msg, State) ->
     {noreply, State}.
 
-put(Key, Value, State) ->
-    RiakPid = maps:get(riak_pid, State),
-    Bucket = maps:get(bucket, State),
-    BinaryKey = integer_to_binary(Key), 
-    Object = riakc_obj:new(Bucket, BinaryKey, Value),
-    case riakc_pb_socket:put(RiakPid, Object) of
-        ok ->
-            {reply, ok, State};
+handle_call({register_package, BinaryData}, _From, State) ->
+    io:format("BinaryData received: ~p~n", [BinaryData]),
+    case parse_package_data(BinaryData) of
+        {ok, ParsedData} ->
+            io:format("Parsed data: ~p~n", [ParsedData]),
+            PackageKey = utils:generate_package_key(),
+            io:format("Generated package key: ~p~n", [PackageKey]),
+            %% Store data in Riak
+            case put(PackageKey, ParsedData, State) of
+                {reply, ok, NewState} ->
+                    notify_analytics(PackageKey),
+                    {reply, {ok, "Package registered", PackageKey}, NewState};
+                {reply, {error, Reason}, _} ->
+                    {reply, {error, Reason}, State}
+            end;
+
         {error, Reason} ->
+            io:format("Failed to parse data. Reason: ~p~n", [Reason]),
             {reply, {error, Reason}, State}
     end.
 
-%% Notify analytics_statem of the registered package
+put(Key, Value, State) ->
+    %% Ensure Riak connection exists
+    case maps:get(riak_pid, State, undefined) of
+        undefined ->
+            io:format("Error: Riak connection not established.~n"),
+            {reply, {error, "Riak not connected"}, State};
+        RiakPid ->
+            Bucket = maps:get(bucket, State),
+            Object = riakc_obj:new(Bucket, Key, Value),
+            case riakc_pb_socket:put(RiakPid, Object) of
+                ok ->
+                    {reply, ok, State};
+                {error, Reason} ->
+                    io:format("Error storing data in Riak: ~p~n", [Reason]),
+                    {reply, {error, Reason}, State}
+            end
+    end.
+
+terminate(_Reason, State) ->
+    %% Clean up Riak connection
+    case maps:get(riak_pid, State) of
+        undefined -> ok;
+        RiakPid -> riakc_pb_socket:stop(RiakPid)
+    end.
+
+code_change(_OldVsn, State, _Extra) ->
+    {ok, State}.
+
 notify_analytics(PackageId) ->
     CurrentTime = erlang:localtime(),
     case analytics_statem:track_package(PackageId, CurrentTime) of
@@ -74,10 +106,38 @@ notify_analytics(PackageId) ->
             io:format("Failed to notify analytics for package ~p: ~p~n", [PackageId, Reason])
     end.
 
-terminate(_Reason, State) ->
-    RiakPid = maps:get(riak_pid, State),
-    riakc_pb_socket:stop(RiakPid),
-    ok.
+%% Function to parse package data
+parse_package_data(BinaryData) ->
+    try
+        %% Convert binary to string
+        StringData = binary_to_list(BinaryData),
+        %% Replace '+' with space
+        NormalizedData = lists:map(fun(Char) -> if Char =:= $+ -> $\s; true -> Char end end, StringData),
+        %% Split by '&' into key-value pairs
+        Pairs = string:tokens(NormalizedData, "&"),
+        %% Parse each key-value pair into a map
+        ParsedData = lists:foldl(fun parse_pair/2, #{}, Pairs),
+        {ok, ParsedData}
+    catch
+        _:Error ->
+            io:format("Failed to parse data.~n"),
+            {error, invalid_data}
+    end.
 
-code_change(_OldVsn, State, _Extra) ->
-    {ok, State}.
+parse_pair(Pair, Acc) ->
+    case string:tokens(Pair, "=") of
+        [Key, Value] ->
+            DecodedKey = decode_url(Key),
+            DecodedValue = decode_url(Value),
+            maps:put(DecodedKey, DecodedValue, Acc);
+        _ ->
+            io:format("Skipping invalid pair: ~p~n", [Pair]),
+            Acc
+    end.
+
+decode_url(Value) ->
+    try
+        lists:map(fun(Char) -> if Char =:= $+ -> $\s; true -> Char end end, Value)
+    catch
+        _:Error -> Value
+    end.

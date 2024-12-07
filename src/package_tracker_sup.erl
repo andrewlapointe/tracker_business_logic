@@ -24,8 +24,8 @@ init([]) ->
         child(tracking_server, worker),
         child(registration_server, worker),
         child(package_monitor_server, worker),
-        child(analytics_statem, worker),
-        child(alert_event, worker)],
+        child(alert_event, worker),
+        child(analytics_statem, worker)],
     {ok, {SupFlags, ChildSpecs}}.
 
 %% internal functions
