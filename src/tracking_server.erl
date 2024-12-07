@@ -55,8 +55,7 @@ handle_info(_Msg, State) ->
 get_package_status(PackageId, State) ->
     RiakPid = maps:get(riak_pid, State),
     Bucket = maps:get(bucket, State),
-    BinaryKey = integer_to_binary(PackageId),
-    case riakc_pb_socket:get(RiakPid, Bucket, BinaryKey) of
+    case riakc_pb_socket:get(RiakPid, Bucket, PackageId) of
         {ok, Object} ->
             {ok, riakc_obj:get_value(Object)};
         {error, Reason} ->
