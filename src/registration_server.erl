@@ -23,7 +23,7 @@ init([]) ->
     self() ! {connect_riak, RiakHost, RiakPort},
     {ok, #{bucket => Bucket, riak_pid => undefined}}.
 
-handle_call({register_package, BinaryData}, _From, State) ->
+handle_call({register, BinaryData}, _From, State) ->
     io:format("BinaryData received: ~p~n", [BinaryData]),
     case parse_package_data(BinaryData) of
         {ok, ParsedData} ->
@@ -95,15 +95,15 @@ parse_package_data(BinaryData) ->
 parse_pair(Pair, Acc) ->
     case string:tokens(Pair, "=") of
         [Key, Value] ->
-            %% Decode the key and value
             DecodedKey = decode_url(Key),
             DecodedValue = decode_url(Value),
             maps:put(DecodedKey, DecodedValue, Acc);
         _ ->
-            %% Skip invalid pairs
+            io:format("Skipping invalid pair: ~p~n", [Pair]),
             Acc
     end.
 
+
 decode_url(Value) ->
-    %% Decode '%XX' sequences in the string
-    re:replace(Value, "%([0-9A-Fa-f]{2})", fun([Hex]) -> list_to_integer(Hex, 16) end, [global, {return, list}]).
+    Normalized = lists:map(fun(Char) -> if Char =:= $+ -> $\s; true -> Char end end, Value),
+    re:replace(Normalized, "%([0-9A-Fa-f]{2})", fun([Hex]) -> list_to_integer(Hex, 16) end, [global, {return, list}]).
