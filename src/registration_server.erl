@@ -81,11 +81,29 @@ parse_package_data(BinaryData) ->
         StringData = binary_to_list(BinaryData),
         %% Replace '+' with space
         NormalizedData = lists:map(fun(Char) -> if Char =:= $+ -> $\s; true -> Char end end, StringData),
-        %% Parse the normalized query string
-        Decoded = http_uri:parse_query(NormalizedData),
-        {ok, maps:from_list(Decoded)}
+        %% Split the string by '&' to get key-value pairs
+        Pairs = string:tokens(NormalizedData, "&"),
+        %% Parse each key-value pair into a map
+        ParsedData = lists:foldl(fun parse_pair/2, #{}, Pairs),
+        {ok, ParsedData}
     catch
         Class:Reason ->
             io:format("Parsing failed. Class: ~p, Reason: ~p~n", [Class, Reason]),
             {error, invalid_data}
     end.
+
+parse_pair(Pair, Acc) ->
+    case string:tokens(Pair, "=") of
+        [Key, Value] ->
+            %% Decode the key and value
+            DecodedKey = decode_url(Key),
+            DecodedValue = decode_url(Value),
+            maps:put(DecodedKey, DecodedValue, Acc);
+        _ ->
+            %% Skip invalid pairs
+            Acc
+    end.
+
+decode_url(Value) ->
+    %% Replace `%XX` sequences with their corresponding characters
+    re:replace(Value, "%([0-9A-Fa-f]{2})", fun([Hex]) -> list_to_integer(Hex, 16) end, [global, {return, list}]).
