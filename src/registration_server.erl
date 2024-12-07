@@ -105,5 +105,5 @@ parse_pair(Pair, Acc) ->
     end.
 
 decode_url(Value) ->
-    %% Replace `%XX` sequences with their corresponding characters
+    %% Decode '%XX' sequences in the string
     re:replace(Value, "%([0-9A-Fa-f]{2})", fun([Hex]) -> list_to_integer(Hex, 16) end, [global, {return, list}]).
