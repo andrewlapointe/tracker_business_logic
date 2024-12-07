@@ -23,7 +23,7 @@ init([]) ->
     self() ! {connect_riak, RiakHost, RiakPort},
     {ok, #{bucket => Bucket, riak_pid => undefined}}.
 
-handle_call({register, BinaryData}, _From, State) ->
+handle_call({register_package, BinaryData}, _From, State) ->
     io:format("BinaryData received: ~p~n", [BinaryData]),
     case parse_package_data(BinaryData) of
         {ok, ParsedData} ->
