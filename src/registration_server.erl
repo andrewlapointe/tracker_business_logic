@@ -44,6 +44,7 @@ handle_info({connect_riak, RiakHost, RiakPort}, State) ->
                     {noreply, NewState}
             end
     end;
+
 handle_info(_Msg, State) ->
     {noreply, State}.
 
@@ -57,6 +58,7 @@ handle_call({register_package, BinaryData}, _From, State) ->
             %% Store data in Riak
             case put(PackageKey, ParsedData, State) of
                 {reply, ok, NewState} ->
+                    notify_analytics(PackageKey),
                     {reply, {ok, "Package registered", PackageKey}, NewState};
                 {reply, {error, Reason}, _} ->
                     {reply, {error, Reason}, State}
@@ -93,6 +95,15 @@ terminate(_Reason, State) ->
 
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
+
+notify_analytics(PackageId) ->
+    CurrentTime = erlang:localtime(),
+    case analytics_statem:track_package(PackageId, CurrentTime) of
+        ok ->
+            io:format("Analytics notified for package ~p at ~p~n", [PackageId, CurrentTime]);
+        {error, Reason} ->
+            io:format("Failed to notify analytics for package ~p: ~p~n", [PackageId, Reason])
+    end.
 
 %% Function to parse package data
 parse_package_data(BinaryData) ->
