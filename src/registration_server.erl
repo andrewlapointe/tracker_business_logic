@@ -24,18 +24,18 @@ init([]) ->
     {ok, #{bucket => Bucket, riak_pid => undefined}}.
 
 handle_call({register_package, BinaryData}, _From, State) ->
-    %% Process the binary data
-    %% Example: Parse or decode the binary data if needed
+    io:format("BinaryData received: ~p~n", [BinaryData]),
     case parse_package_data(BinaryData) of
         {ok, ParsedData} ->
-            %% Simulate storing the data or performing the required action
+            io:format("Parsed data: ~p~n", [ParsedData]),
             PackageKey = utils:generate_package_key(),
-            io:format("Package ~p registered with data: ~p~n", [PackageKey, ParsedData]),
+            io:format("Generated package key: ~p~n", [PackageKey]),
             {reply, {ok, "Package registered", PackageKey}, State};
         {error, Reason} ->
-            io:format("Failed to register package: ~p~n", [Reason]),
+            io:format("Failed to parse data. Reason: ~p~n", [Reason]),
             {reply, {error, Reason}, State}
     end.
+
 
 
 handle_info({connect_riak, RiakHost, RiakPort}, State) ->
