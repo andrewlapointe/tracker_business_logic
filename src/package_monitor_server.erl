@@ -41,9 +41,21 @@ handle_cast({update_db_record, PackageId, Data}, State) ->
                     % Step 3: Write the updated object back to Riak
                     case riakc_pb_socket:put(RiakPid, UpdatedObject) of
                         ok ->
-                            % TODO: Notify the Notification Service
-                            % notification_app:notify(PackageId, UpdatedMap),
                             io:format("Package ~p updated successfully with data: ~p.~n", [PackageId, UpdatedMap]),
+                            
+                            %% Notify analytics_statem if the package is marked as delivered
+                            case maps:get(status, Data, undefined) of
+                                delivered ->
+                                    CurrentTime = erlang:localtime(),
+                                    case analytics_statem:update_package(PackageId, CurrentTime) of
+                                        ok ->
+                                            io:format("Analytics notified for delivered package ~p at ~p.~n", [PackageId, CurrentTime]);
+                                        {error, Reason} ->
+                                            io:format("Failed to notify analytics for package ~p: ~p.~n", [PackageId, Reason])
+                                    end;
+                                _ -> ok % No action for other statuses
+                            end,
+
                             {noreply, State};
                         {error, Reason} ->
                             io:format("Failed to update package ~p: ~p.~n", [PackageId, Reason]),

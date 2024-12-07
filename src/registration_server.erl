@@ -63,6 +63,7 @@ handle_call({register_package, BinaryData}, _From, State) ->
                 {reply, {error, Reason}, _} ->
                     {reply, {error, Reason}, State}
             end;
+
         {error, Reason} ->
             io:format("Failed to parse data. Reason: ~p~n", [Reason]),
             {reply, {error, Reason}, State}
