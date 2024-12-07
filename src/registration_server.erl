@@ -76,10 +76,16 @@ code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
 parse_package_data(BinaryData) ->
-    %% Example: Decode URL-encoded binary data into a map
     try
-        Decoded = http_uri:parse_query(binary_to_list(BinaryData)),
+        %% Convert binary to list (string)
+        StringData = binary_to_list(BinaryData),
+        %% Replace '+' with space
+        NormalizedData = lists:map(fun(Char) -> if Char =:= $+ -> $\s; true -> Char end end, StringData),
+        %% Parse the normalized query string
+        Decoded = http_uri:parse_query(NormalizedData),
         {ok, maps:from_list(Decoded)}
     catch
-        _:_ -> {error, invalid_data}
+        Class:Reason ->
+            io:format("Parsing failed. Class: ~p, Reason: ~p~n", [Class, Reason]),
+            {error, invalid_data}
     end.
