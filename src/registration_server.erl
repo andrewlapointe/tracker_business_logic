@@ -3,7 +3,7 @@
 
 %% API
 -export([start_link/0, register_package/1, parse_package_data/1]).
--export([init/1, handle_call/3, terminate/2, code_change/3]).
+-export([init/1, handle_call/3, handle_info/2, terminate/2, code_change/3]).
 
 %% Client API
 start_link() ->
@@ -18,9 +18,34 @@ init([]) ->
     RiakHost = utils:riak_ip_address(),
     RiakPort = utils:port_number(),
     Bucket = <<"bucket">>,
-    %% Initiate connection asynchronously
+    %% Send a message to self to initiate connection
     self() ! {connect_riak, RiakHost, RiakPort},
-    {ok, #{bucket => Bucket, riak_pid => undefined}}.
+    {ok, #{bucket => Bucket, riak_pid => undefined, retry_count => 0}}.
+
+handle_info({connect_riak, RiakHost, RiakPort}, State) ->
+    %% Attempt to connect to Riak
+    case riakc_pb_socket:start_link(RiakHost, RiakPort) of
+        {ok, RiakPid} ->
+            io:format("Successfully connected to Riak.~n"),
+            NewState = State#{riak_pid => RiakPid, retry_count => 0},
+            {noreply, NewState};
+        {error, Reason} ->
+            io:format("Failed to connect to Riak: ~p~n", [Reason]),
+            RetryCount = maps:get(retry_count, State, 0),
+            case RetryCount of
+                5 ->
+                    io:format("Max retries reached. Stopping server.~n"),
+                    {stop, Reason, State};
+                _ ->
+                    %% Retry connection after a delay
+                    timer:sleep(1000),
+                    NewState = State#{retry_count => RetryCount + 1},
+                    self() ! {connect_riak, RiakHost, RiakPort},
+                    {noreply, NewState}
+            end
+    end;
+handle_info(_Msg, State) ->
+    {noreply, State}.
 
 handle_call({register_package, BinaryData}, _From, State) ->
     io:format("BinaryData received: ~p~n", [BinaryData]),
@@ -29,7 +54,7 @@ handle_call({register_package, BinaryData}, _From, State) ->
             io:format("Parsed data: ~p~n", [ParsedData]),
             PackageKey = utils:generate_package_key(),
             io:format("Generated package key: ~p~n", [PackageKey]),
-            %% Save the data to Riak or another storage
+            %% Store data in Riak
             case put(PackageKey, ParsedData, State) of
                 {reply, ok, NewState} ->
                     {reply, {ok, "Package registered", PackageKey}, NewState};
@@ -41,30 +66,26 @@ handle_call({register_package, BinaryData}, _From, State) ->
             {reply, {error, Reason}, State}
     end.
 
-handle_info({connect_riak, RiakHost, RiakPort}, State) ->
-    case riakc_pb_socket:start_link(RiakHost, RiakPort) of
-        {ok, RiakPid} ->
-            NewState = State#{riak_pid => RiakPid},
-            {noreply, NewState};
-        {error, Reason} ->
-            io:format("Failed to connect to Riak: ~p~n", [Reason]),
-            {stop, Reason, State}
-    end;
-handle_info(_Msg, State) ->
-    {noreply, State}.
-
 put(Key, Value, State) ->
-    RiakPid = maps:get(riak_pid, State),
-    Bucket = maps:get(bucket, State),
-    Object = riakc_obj:new(Bucket, Key, Value),
-    case riakc_pb_socket:put(RiakPid, Object) of
-        ok ->
-            {reply, ok, State};
-        {error, Reason} ->
-            {reply, {error, Reason}, State}
+    %% Ensure Riak connection exists
+    case maps:get(riak_pid, State, undefined) of
+        undefined ->
+            io:format("Error: Riak connection not established.~n"),
+            {reply, {error, "Riak not connected"}, State};
+        RiakPid ->
+            Bucket = maps:get(bucket, State),
+            Object = riakc_obj:new(Bucket, Key, Value),
+            case riakc_pb_socket:put(RiakPid, Object) of
+                ok ->
+                    {reply, ok, State};
+                {error, Reason} ->
+                    io:format("Error storing data in Riak: ~p~n", [Reason]),
+                    {reply, {error, Reason}, State}
+            end
     end.
 
 terminate(_Reason, State) ->
+    %% Clean up Riak connection
     case maps:get(riak_pid, State) of
         undefined -> ok;
         RiakPid -> riakc_pb_socket:stop(RiakPid)
@@ -87,7 +108,7 @@ parse_package_data(BinaryData) ->
         {ok, ParsedData}
     catch
         _:Error ->
-            io:format("Failed to parse data: ~p~n", [Error]),
+            io:format("Failed to parse data.~n"),
             {error, invalid_data}
     end.
 
