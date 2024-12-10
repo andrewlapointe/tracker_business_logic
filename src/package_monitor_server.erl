@@ -97,27 +97,36 @@ code_change(_OldVsn, State, _Extra) ->
 %% Function to parse package data
 parse_package_data(BinaryData) ->
     try
-        %% Convert binary to string
+        %% Convert binary to a list of characters
         StringData = binary_to_list(BinaryData),
-        %% Replace '+' with space
+        io:format("StringData: ~s~n", [StringData]),
+        
+        %% Replace '+' with spaces
         NormalizedData = lists:map(fun(Char) -> if Char =:= $+ -> $\s; true -> Char end end, StringData),
+        io:format("NormalizedData: ~s~n", [NormalizedData]),
+        
         %% Split by '&' into key-value pairs
         Pairs = string:tokens(NormalizedData, "&"),
+        io:format("Pairs: ~p~n", [Pairs]),
+        
         %% Parse each key-value pair into a map
         ParsedData = lists:foldl(fun parse_pair/2, #{}, Pairs),
+        io:format("ParsedData: ~p~n", [ParsedData]),
+        
         {ok, ParsedData}
     catch
-        _:Error ->
-            io:format("Failed to parse data.~n"),
+        Error:Reason ->
+            io:format("Error during parsing: ~p: ~p~n", [Error, Reason]),
             {error, invalid_data}
     end.
 
-%% Parse a single key-value pair and add it to the map
+%% Parse a single key-value pair into a map
 parse_pair(Pair, Acc) ->
     case string:tokens(Pair, "=") of
         [Key, Value] ->
-            DecodedKey = binary:copy(decode_url(Key)),
-            DecodedValue = binary:copy(decode_url(Value)),
+            DecodedKey = decode_url(binary:copy(Key)),
+            DecodedValue = decode_url(binary:copy(Value)),
+            io:format("Parsed Pair - Key: ~p, Value: ~p~n", [DecodedKey, DecodedValue]),
             maps:put(DecodedKey, DecodedValue, Acc);
         _ ->
             io:format("Skipping invalid pair: ~p~n", [Pair]),
@@ -127,7 +136,11 @@ parse_pair(Pair, Acc) ->
 %% Decode URL-encoded values
 decode_url(Value) ->
     try
+        %% Handle decoding of URL-encoded values
         uri_string:decode(Value)
     catch
-        _:_ -> binary:copy(Value) % Ensure binary output in case of failure
+        _:_ ->
+            %% Fallback for invalid decoding
+            io:format("Decode failed for: ~p~n", [Value]),
+            Value
     end.
