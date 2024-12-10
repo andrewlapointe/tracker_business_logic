@@ -12,7 +12,7 @@ track_package(PackageId, InitialTime) ->
     gen_statem:call(?MODULE, {track, PackageId, InitialTime}).
 
 update_package(PackageId, NewState, Time) ->
-    gen_statem:call(?MODULE, {package_update, PackageId, NewState, Time}).
+    gen_statem:call(?MODULE, {package_update, PackageId, delivered, Time}).
 
 %% State Initialization
 init([]) ->
