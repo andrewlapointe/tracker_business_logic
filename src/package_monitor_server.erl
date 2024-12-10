@@ -50,7 +50,7 @@ handle_cast({update_package, PackageId, BinaryData}, State) ->
                                     case maps:get(<<"status">>, UpdatedMap, <<"">>) of
                                         <<"Delivered">> ->
                                             io:format("Updating analytics for package ~p.~n", [PackageId]),
-                                            analytics_statem:update_package(<<"delivered_packages">>, 1),
+                                            analytics_statem:update_package(PackageId, erlang:localtime()),
                                             {noreply, State};
                                         _ ->
                                             {noreply, State}
