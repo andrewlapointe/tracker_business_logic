@@ -38,8 +38,8 @@ handle_cast({update_package, PackageId, BinaryData}, State) ->
                     CurrentValue = riakc_obj:get_value(Object),
                     case catch binary_to_term(CurrentValue) of
                         Map when is_map(Map) ->
-                            Change = maps:put("address", maps:get("address", ParsedData), Map),
-                            UpdatedMap = maps:put("status", maps:get("status", ParsedData), Change),
+                            Change = maps:put(address, maps:get(address, ParsedData), Map),
+                            UpdatedMap = maps:put(status, maps:get(status, ParsedData), Change),
                             UpdatedValue = term_to_binary(UpdatedMap),
                             UpdatedObject = riakc_obj:update_value(Object, UpdatedValue),
 
