@@ -96,62 +96,62 @@ code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
 
-parse_package_data(BinaryData) ->
-    try
-        DecodedString = binary_to_list(BinaryData),
-        KeyValuePairs = http_uri:parse_query(DecodedString),
-        {ok, maps:from_list(KeyValuePairs)}
-    catch
-        _:_ -> 
-            {error, invalid_data}
-    end.
-% %% Function to parse package data
 % parse_package_data(BinaryData) ->
 %     try
-%         %% Convert binary to a list of characters
-%         StringData = binary_to_list(BinaryData),
-%         io:format("StringData: ~s~n", [StringData]),
-        
-%         %% Replace '+' with spaces
-%         NormalizedData = lists:map(fun(Char) -> if Char =:= $+ -> $\s; true -> Char end end, StringData),
-%         io:format("NormalizedData: ~s~n", [NormalizedData]),
-        
-%         %% Split by '&' into key-value pairs
-%         Pairs = string:tokens(NormalizedData, "&"),
-%         io:format("Pairs: ~p~n", [Pairs]),
-        
-%         %% Parse each key-value pair into a map
-%         ParsedData = lists:foldl(fun parse_pair/2, #{}, Pairs),
-%         io:format("ParsedData: ~p~n", [ParsedData]),
-        
-%         {ok, ParsedData}
+%         DecodedString = binary_to_list(BinaryData),
+%         KeyValuePairs = http_uri:parse_query(DecodedString),
+%         {ok, maps:from_list(KeyValuePairs)}
 %     catch
-%         Error:Reason ->
-%             io:format("Error during parsing: ~p: ~p~n", [Error, Reason]),
+%         _:_ -> 
 %             {error, invalid_data}
 %     end.
+%% Function to parse package data
+parse_package_data(BinaryData) ->
+    try
+        %% Convert binary to a list of characters
+        StringData = binary_to_list(BinaryData),
+        io:format("StringData: ~s~n", [StringData]),
+        
+        %% Replace '+' with spaces
+        NormalizedData = lists:map(fun(Char) -> if Char =:= $+ -> $\s; true -> Char end end, StringData),
+        io:format("NormalizedData: ~s~n", [NormalizedData]),
+        
+        %% Split by '&' into key-value pairs
+        Pairs = string:tokens(NormalizedData, "&"),
+        io:format("Pairs: ~p~n", [Pairs]),
+        
+        %% Parse each key-value pair into a map
+        ParsedData = lists:foldl(fun parse_pair/2, #{}, Pairs),
+        io:format("ParsedData: ~p~n", [ParsedData]),
+        
+        {ok, ParsedData}
+    catch
+        Error:Reason ->
+            io:format("Error during parsing: ~p: ~p~n", [Error, Reason]),
+            {error, invalid_data}
+    end.
 
-% %% Parse a single key-value pair into a map
-% parse_pair(Pair, Acc) ->
-%     case string:tokens(Pair, "=") of
-%         [Key, Value] ->
-%             %% Convert key and value to binary safely
-%             DecodedKey = try_decode(list_to_binary(Key)),
-%             DecodedValue = try_decode(list_to_binary(Value)),
-%             io:format("Parsed Pair - Key: ~p, Value: ~p~n", [DecodedKey, DecodedValue]),
-%             maps:put(DecodedKey, DecodedValue, Acc);
-%         _ ->
-%             io:format("Skipping invalid pair: ~p~n", [Pair]),
-%             Acc
-%     end.
+%% Parse a single key-value pair into a map
+parse_pair(Pair, Acc) ->
+    case string:tokens(Pair, "=") of
+        [Key, Value] ->
+            %% Convert key and value to binary safely
+            DecodedKey = try_decode(list_to_binary(Key)),
+            DecodedValue = try_decode(list_to_binary(Value)),
+            io:format("Parsed Pair - Key: ~p, Value: ~p~n", [DecodedKey, DecodedValue]),
+            maps:put(DecodedKey, DecodedValue, Acc);
+        _ ->
+            io:format("Skipping invalid pair: ~p~n", [Pair]),
+            Acc
+    end.
 
-% try_decode(Value) ->
-%     try
-%         %% Decode URL-encoded values
-%         uri_string:decode(Value)
-%     catch
-%         _:_ ->
-%             %% Return original value if decoding fails
-%             io:format("Failed to decode value: ~p~n", [Value]),
-%             Value
-%     end.
+try_decode(Value) ->
+    try
+        %% Decode URL-encoded values
+        uri_string:decode(Value)
+    catch
+        _:_ ->
+            %% Return original value if decoding fails
+            io:format("Failed to decode value: ~p~n", [Value]),
+            Value
+    end.
