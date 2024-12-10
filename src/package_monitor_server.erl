@@ -30,7 +30,7 @@ handle_cast({update_db_record, PackageId, BinaryData}, State) ->
             %% Fetch Riak connection details
             RiakPid = maps:get(riak_pid, State),
             Bucket = maps:get(bucket, State),
-            BinaryKey = integer_to_binary(PackageId),
+            BinaryKey = binary:copy(PackageId),
 
             %% Fetch the current object
             case riakc_pb_socket:get(RiakPid, Bucket, BinaryKey) of
