@@ -124,8 +124,9 @@ parse_package_data(BinaryData) ->
 parse_pair(Pair, Acc) ->
     case string:tokens(Pair, "=") of
         [Key, Value] ->
-            DecodedKey = decode_url(binary:copy(Key)),
-            DecodedValue = decode_url(binary:copy(Value)),
+            %% Convert key and value to binary safely
+            DecodedKey = try_decode(list_to_binary(Key)),
+            DecodedValue = try_decode(list_to_binary(Value)),
             io:format("Parsed Pair - Key: ~p, Value: ~p~n", [DecodedKey, DecodedValue]),
             maps:put(DecodedKey, DecodedValue, Acc);
         _ ->
@@ -133,14 +134,13 @@ parse_pair(Pair, Acc) ->
             Acc
     end.
 
-%% Decode URL-encoded values
-decode_url(Value) ->
+try_decode(Value) ->
     try
-        %% Handle decoding of URL-encoded values
+        %% Decode URL-encoded values
         uri_string:decode(Value)
     catch
         _:_ ->
-            %% Fallback for invalid decoding
-            io:format("Decode failed for: ~p~n", [Value]),
+            %% Return original value if decoding fails
+            io:format("Failed to decode value: ~p~n", [Value]),
             Value
     end.
