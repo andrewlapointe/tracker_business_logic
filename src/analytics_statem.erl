@@ -1,7 +1,7 @@
 -module(analytics_statem).
 -behaviour(gen_statem).
 
--export([start_link/0, track_package/2, update_package/3]).
+-export([start_link/0, track_package/2, update_package/2]).
 -export([init/1, callback_mode/0, registered/3, out/3, delivered/3, handle_event/4, terminate/3, code_change/4]).
 
 %% API
@@ -11,7 +11,7 @@ start_link() ->
 track_package(PackageId, InitialTime) ->
     gen_statem:call(?MODULE, {track, PackageId, InitialTime}).
 
-update_package(PackageId, NewState, Time) ->
+update_package(PackageId, Time) ->
     gen_statem:call(?MODULE, {package_update, PackageId, delivered, Time}).
 
 %% State Initialization
