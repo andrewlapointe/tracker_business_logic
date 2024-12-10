@@ -18,7 +18,7 @@ init([]) ->
     RiakHost = utils:riak_ip_address(),
     RiakPort = utils:port_number(),
     Bucket = <<"bucket">>,
-    %% Send a message to self to establish connection asynchronously
+    %% Connect to Riak asynchronously
     self() ! {connect_riak, RiakHost, RiakPort},
     {ok, #{bucket => Bucket, riak_pid => undefined}}.
 
@@ -27,36 +27,30 @@ handle_cast({update_db_record, PackageId, Data}, State) ->
     Bucket = maps:get(bucket, State),
     BinaryKey = integer_to_binary(PackageId),
 
-    % Step 1: Fetch the current object
+    %% Fetch the current object
     case riakc_pb_socket:get(RiakPid, Bucket, BinaryKey) of
         {ok, Object} ->
-            % Step 2: Update the object's value
+            %% Update the object with new data
             CurrentValue = riakc_obj:get_value(Object),
             case catch binary_to_term(CurrentValue) of
                 Map when is_map(Map) ->
-                    UpdatedMap = maps:merge(Map, Data), % Merge existing data with new data
+                    UpdatedMap = maps:merge(Map, Data),
                     UpdatedValue = term_to_binary(UpdatedMap),
                     UpdatedObject = riakc_obj:update_value(Object, UpdatedValue),
 
-                    % Step 3: Write the updated object back to Riak
+                    %% Write the updated object back to Riak
                     case riakc_pb_socket:put(RiakPid, UpdatedObject) of
                         ok ->
                             io:format("Package ~p updated successfully with data: ~p.~n", [PackageId, UpdatedMap]),
-                            
-                            %% Notify analytics_statem if the package is marked as delivered
-                            case maps:get(status, Data, undefined) of
-                                delivered ->
-                                    CurrentTime = erlang:localtime(),
-                                    case analytics_statem:update_package(PackageId, CurrentTime) of
-                                        ok ->
-                                            io:format("Analytics notified for delivered package ~p at ~p.~n", [PackageId, CurrentTime]);
-                                        {error, Reason} ->
-                                            io:format("Failed to notify analytics for package ~p: ~p.~n", [PackageId, Reason])
-                                    end;
-                                _ -> ok % No action for other statuses
-                            end,
-
-                            {noreply, State};
+                            %% Check for "Delivered" status and update analytics
+                            case maps:get(<<"status">>, UpdatedMap, <<"">>) of
+                                <<"Delivered">> ->
+                                    io:format("Updating analytics for package ~p.~n", [PackageId]),
+                                    analytics:update_package(<<"delivered_packages">>, 1),
+                                    {noreply, State};
+                                _ ->
+                                    {noreply, State}
+                            end;
                         {error, Reason} ->
                             io:format("Failed to update package ~p: ~p.~n", [PackageId, Reason]),
                             {noreply, State}
@@ -79,12 +73,9 @@ handle_info({connect_riak, RiakHost, RiakPort}, State) ->
             NewState = State#{riak_pid => RiakPid},
             {noreply, NewState};
         {error, Reason} ->
-            %% Handle the connection error, possibly retry
             io:format("Failed to connect to Riak: ~p~n", [Reason]),
-            %% Decide whether to retry, stop, or continue without Riak
             {stop, Reason, State}
     end;
-
 handle_info(_Msg, State) ->
     {noreply, State}.
 
