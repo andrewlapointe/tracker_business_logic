@@ -22,7 +22,7 @@ init([]) ->
     self() ! {connect_riak, RiakHost, RiakPort},
     {ok, #{bucket => Bucket, riak_pid => undefined}}.
 
-handle_cast({update_db_record, PackageId, BinaryData}, State) ->
+handle_cast({update_package, PackageId, BinaryData}, State) ->
     %% Parse the binary data
     case parse_package_data(BinaryData) of
         {ok, ParsedData} ->
@@ -30,10 +30,9 @@ handle_cast({update_db_record, PackageId, BinaryData}, State) ->
             %% Fetch Riak connection details
             RiakPid = maps:get(riak_pid, State),
             Bucket = maps:get(bucket, State),
-            BinaryKey = binary:copy(PackageId),
 
-            %% Fetch the current object
-            case riakc_pb_socket:get(RiakPid, Bucket, BinaryKey) of
+            %% Use PackageId as the key
+            case riakc_pb_socket:get(RiakPid, Bucket, PackageId) of
                 {ok, Object} ->
                     %% Update the object with new data
                     CurrentValue = riakc_obj:get_value(Object),
@@ -72,7 +71,7 @@ handle_cast({update_db_record, PackageId, BinaryData}, State) ->
                     {noreply, State}
             end;
         {error, Reason} ->
-            io:format("Failed to parse data for package ~p: ~p.~n", [PackageId, Reason]),
+            io:format("Failed to parse data for package ~p: ~p~n", [PackageId, Reason]),
             {noreply, State}
     end.
 
