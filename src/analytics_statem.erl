@@ -79,6 +79,9 @@ out({call, From}, {package_update, PackageId, out, Time}, StateData) ->
         undefined ->
             {keep_state_and_data, StateData, [{reply, From, {error, "No registered time found"}}]}
     end;
+out({call, From}, {track, PackageId, _Time}, StateData) ->
+    io:format("Cannot track package ~p in 'out' state~n", [PackageId]),
+    {keep_state_and_data, StateData, [{reply, From, {error, "Cannot track in 'out' state"}}]};
 
 out(EventType, EventContent, StateData) ->
     io:format("Unexpected event in 'out' state: ~p, ~p~n", [EventType, EventContent]),
